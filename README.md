@@ -166,6 +166,6 @@ python send_events.py 1000
 
 ## About me
 
-I'm Nidhi Gayatri Triplicane, a Data/Business Analyst based in Berlin. I previously worked at ZS Associates as a Decision Analytics Associate, specializing in commercial analytics and customer insights for large enterprise clients.
+I'm Gayatri Triplicane, a Data/Business Analyst based in Berlin. I previously worked at ZS Associates as a Decision Analytics Associate, specializing in commercial analytics and customer insights for large enterprise clients.
 
 **Connect:** [LinkedIn](https://linkedin.com/in/gayatri-triplicane) · [GitHub](https://github.com/nidhi0908) · [Tableau Public](https://public.tableau.com/app/profile/gayatri.triplicane/vizzes)
