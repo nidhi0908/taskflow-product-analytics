@@ -1,91 +1,171 @@
-# TaskFlow Event Schema
+# TaskFlow — Product Analytics Case Study
 
-19 events across 5 phases of the B2B SaaS user journey. Designed to answer funnel, retention, A/B testing, and channel quality questions.
+> A portfolio project simulating the work of a first product analyst at a Series A B2B SaaS company. I designed the event schema, instrumented the product, generated 30 days of synthetic user behavior with deliberate patterns, and answered four PM questions using PostHog.
 
-## Design principles
+**🔗 Live dashboard:** [View in PostHog](https://eu.posthog.com/shared/SZ309XP-DHawyp3MxOVeJZUe7dWAOw)
 
-- **Naming:** `object_verb` past tense (e.g., `task_created`, not `create_task`)
-- **Intentional actions only:** No vanity events like `button_clicked` or `page_viewed` — only actions that reflect real user intent
-- **Avoid event explosion:** Paywall events use a single event with a `feature_name` property, not separate events per feature
-- **Split events at funnel steps:** `member_invited` and `member_joined` are separate events so invite acceptance can be measured as a conversion
+**Tools:** PostHog (product analytics, HogQL), Python (event simulation), Git
 
 ---
 
-## Person properties
+## Executive summary
 
-Set once per user via `$set` on their first event.
+Four PM questions, four insights, four recommendations. The one-sentence story: **onboarding is the bottleneck, the users who get past it retain because they invite teammates, a simplified onboarding lifts activation by 24%, and paid budget should shift toward the referral channel that's already outperforming it.**
 
-| Property | Type | Values |
-|---|---|---|
-| `username` | string | `user_00000`, `user_00001`... (display name) |
-| `signup_date` | ISO datetime | Timestamp of signup |
-| `acquisition_channel` | string | `organic`, `paid_search`, `referral`, `direct` |
-| `company_size` | string | `1`, `2-10`, `11-50`, `51-200`, `200+` |
-| `industry` | string | `tech`, `marketing`, `design`, `consulting`, `other` |
-| `country` | string | ISO country code |
-| `plan` | string | `free`, `pro`, `business` |
-| `experiment_variant` | string | `control`, `treatment` (onboarding A/B test) |
+| # | Question | Insight | Recommendation |
+|---|---|---|---|
+| 1 | Where are we losing users before activation? | **40% of users drop off at onboarding.** Everything after onboarding converts at >95%. | Shorten or simplify onboarding. The product works — users just aren't reaching it. |
+| 2 | Does inviting a teammate predict retention? | **Multiplayer users retain at 48% on Day 7 vs 7% for solo users — a ~6.6x lift.** | Move the team invite prompt to step 1 of onboarding. It's the single strongest retention lever in the data. |
+| 3 | Does simplified onboarding lift activation? | **Treatment group activated at 69.5% vs control at 55.8% — a +13.6 percentage point lift (+24% relative).** | Ship treatment to 100% of new users. Combined with #2, expect Day 7 retention to rise ~5-7 pp. |
+| 4 | Are paid-acquisition users worth it? | **Paid search users underperform on every metric — 12 pp lower activation, 12 pp lower return, zero paid conversions.** Referral traffic is the best channel by far. | Audit paid search targeting. Redirect budget into a formal referral program — referral is already outperforming every other channel organically. |
 
 ---
 
-## Events
+## The setup
 
-### Phase 1: Activation
+**The scenario:** I'm the first product analyst at TaskFlow, a fictional B2B task-management SaaS. The PM asks me four questions about the product. This repo is my answer.
 
-| Event | Fires when | Key properties |
-|---|---|---|
-| `signed_up` | User creates an account | `acquisition_channel`, `experiment_variant` |
-| `onboarding_started` | User enters onboarding flow | — |
-| `onboarding_completed` | User finishes all onboarding steps | — |
-| `project_created` | User creates their first/Nth project | `project_id` |
-| `task_created` | User creates a task | `project_id`, `task_priority`, `task_has_due_date` |
+**The data:** 1,000 simulated users generating ~50,000 events across 30 days. Data is synthetic but structured with realistic patterns — see [`simulator.py`](./simulator.py) for the data-generating process. Events were ingested into PostHog using `historical_migration=True`.
 
-### Phase 2: Engagement (task lifecycle)
-
-| Event | Fires when | Key properties |
-|---|---|---|
-| `task_assigned` | A task is assigned to a user | `project_id`, `task_priority` |
-| `task_completed` | A task is marked done | `project_id`, `task_priority` |
-| `task_commented` | A user comments on a task | `project_id` |
-| `task_updated` | Task title/description/due date edited | `project_id` |
-
-### Phase 3: Collaboration
-
-| Event | Fires when | Key properties |
-|---|---|---|
-| `member_invited` | User sends an invite to a teammate | `invite_method` |
-| `member_joined` | Invited teammate accepts and joins | — |
-
-### Phase 4: Retention
-
-| Event | Fires when | Key properties |
-|---|---|---|
-| `session_started` | New session after 30+ min of inactivity | — |
-
-### Phase 5: Monetization
-
-| Event | Fires when | Key properties |
-|---|---|---|
-| `paywall_shown` | User hits a premium feature gate | `feature_name` (`gantt_chart`, `file_attachment`, `advanced_reports`) |
-| `paywall_upgrade_clicked` | User clicks the upgrade CTA on paywall | `feature_name` |
-| `pricing_page_viewed` | User lands on /pricing | — |
-| `checkout_started` | Payment form rendered | — |
-| `checkout_completed` | Payment succeeded | `plan_chosen`, `billing_period`, `revenue_usd` |
-| `subscription_activated` | Subscription is live (server confirmation) | — |
-
-### Phase 6: Churn
-
-| Event | Fires when | Key properties |
-|---|---|---|
-| `subscription_cancelled` | User downgrades or cancels | — |
+**Why simulated data?** Product analytics is fundamentally about instrumentation, not just analysis. Designing an event schema, deciding what to track, and generating realistic behavior is a core skill I wanted to demonstrate end-to-end. Using a pre-built Kaggle dataset would have skipped the instrumentation half of the job.
 
 ---
 
-## What I deliberately did NOT track
+## The event schema
 
-- **`button_clicked` / `page_viewed`** — vanity events that inflate event volume without producing insight
-- **`task_hovered` / `task_scrolled`** — low-intent signals that don't predict retention or revenue
-- **Separate events per paywall feature** — collapsed into `paywall_shown` + `feature_name` property to avoid event explosion
-- **Login events** — modern apps keep users logged in for weeks; `session_started` is a better "user came back" signal
+I designed 19 events across 5 phases of the B2B SaaS user journey:
 
-Keeping the schema deliberately small means dashboards stay readable, funnels are unambiguous, and new events can be added without bloating the analysis surface.
+| Phase | Events |
+|---|---|
+| **Activation** | `signed_up`, `onboarding_started`, `onboarding_completed`, `project_created`, `task_created` |
+| **Engagement** | `task_assigned`, `task_completed`, `task_commented`, `task_updated` |
+| **Collaboration** | `member_invited`, `member_joined` |
+| **Retention** | `session_started` |
+| **Monetization** | `paywall_shown`, `paywall_upgrade_clicked`, `pricing_page_viewed`, `checkout_started`, `checkout_completed`, `subscription_activated` |
+| **Churn** | `subscription_cancelled` |
+
+**Design principles:**
+- Every event is `object_verb` past tense (PostHog convention)
+- Intentional actions over vanity metrics (`task_completed` not `task_viewed`)
+- Paywall events use a `feature_name` property to avoid event explosion as new premium features are added
+- `member_invited` and `member_joined` are separate events so invite acceptance rate can be measured
+
+Full schema with properties: [`SCHEMA.md`](./SCHEMA.md)
+
+---
+
+## The four questions
+
+### 1. Where are we losing users between signup and activation?
+
+**Approach:** Built a 5-step activation funnel in PostHog.
+
+**Insight:** 40% of users who start onboarding never complete it. Once past onboarding, the rest of the funnel is healthy — 96% of completers create a project, 99% of those create a task.
+
+| Step | Users | Conversion |
+|---|---|---|
+| signed_up | 910 | 100% |
+| onboarding_started | 872 | 95.8% |
+| **onboarding_completed** | **542** | **59.6%** 🚨 |
+| project_created | 464 | 51.0% |
+| task_created | 459 | 50.4% |
+
+**Recommendation:** Onboarding is the bottleneck, not the product itself. Users who get through it engage normally. This insight directly motivated the A/B test in Question 3.
+
+![Activation Funnel](./screenshots/01_funnel.png)
+
+---
+
+### 2. Does inviting a teammate predict retention?
+
+**Approach:** Created two cohorts — "Multiplayer Users" (invited ≥1 teammate) and "Solo Users" — then compared their Day 0-30 retention curves.
+
+**Insight:** Users who invite at least one teammate retain at **48% on Day 7**. Solo users retain at just **7.3%**. That's a **~6.6x retention multiplier** — the single strongest predictor of retention in the dataset.
+
+| Cohort | Size | Day 1 | Day 7 | Day 14 |
+|---|---|---|---|---|
+| **Multiplayer** (invited teammate) | 218 | 25.2% | **48.3%** | 47.5% |
+| **Solo** (no invite) | 697 | ~7% | **7.3%** | ~5% |
+
+**Recommendation:** Move the team invite prompt from later in onboarding to step 1. Every user who invites a teammate is worth roughly 6 solo users in retention terms. The "multiplayer threshold" is the single biggest lever available to the team.
+
+![Multiplayer Retention](./screenshots/02a_retention_multiplayer.png)
+![Solo Retention](./screenshots/02b_retention_solo.png)
+
+---
+
+### 3. Does simplified onboarding lift activation?
+
+**Approach:** Analyzed an A/B test (50/50 split) comparing the existing onboarding flow (control) against a simplified version (treatment). Built a funnel broken down by `experiment_variant`.
+
+**Insight:** Treatment wins convincingly.
+
+| Group | Signups | Activated | Activation Rate |
+|---|---|---|---|
+| **Control** (existing) | 471 | 263 | 55.8% |
+| **Treatment** (simplified) | 439 | 305 | **69.5%** |
+| **Absolute lift** | | | **+13.6 pp** |
+| **Relative lift** | | | **+24.4%** |
+
+With n=910, the gap is well outside noise.
+
+**Recommendation:** Ship treatment to 100% of new users. Combined with the retention finding above, I'd expect overall Day 7 retention to rise by ~5-7 percentage points.
+
+![A/B Test Results](./screenshots/03_ab_test.png)
+
+---
+
+### 4. Are paid-acquisition users worth it?
+
+**Approach:** A question the UI can't easily answer — I needed to compare multiple cohorts across multiple metrics simultaneously. Wrote a HogQL query joining events to themselves by `person_id`, grouping by `acquisition_channel`, and computing activation rate, return rate, and paid conversion in one shot.
+
+**Insight:** Paid search users underperform on every metric.
+
+| Channel | Signups | Activation % | Return % | Paid Convert % |
+|---|---|---|---|---|
+| organic | 400 | 65.5% | 59.8% | 0.25% |
+| **paid_search** | 338 | **53.6%** 🚨 | **48.2%** 🚨 | 0.00% |
+| **referral** | 180 | **71.1%** ✨ | 63.3% | 1.11% |
+| direct | 82 | 62.2% | 53.7% | 0.00% |
+
+**Recommendation:** If paid_search CAC is comparable to organic, the unit economics are underwater — paid users cost the same to acquire but are 18% less likely to activate and 20% less likely to return. Redirect paid budget into a formal referral program, which is already outperforming every other channel organically.
+
+Query: [`queries/channel_quality.sql`](./queries/channel_quality.sql)
+
+![Channel Quality HogQL](./screenshots/04_hogql.png)
+
+---
+
+## Tech notes
+
+**Event ingestion:** Used PostHog's `historical_migration=True` mode to backfill 30 days of events. This mode routes events through a different ingestion pipeline optimized for backfills and doesn't count against standard ingestion quotas. Ran into — and documented — the SDK gotcha where backend events require explicit `$set` on the first event per user to create person profiles.
+
+**Reproducibility:** `simulator.py` uses a fixed random seed (`SEED=42`), so the same run always produces the same data. Makes it possible to re-run and get identical results for screenshots/debugging.
+
+**Patterns baked in:** The simulator deliberately encodes four patterns: a ~40% onboarding drop-off, a ~3x retention lift for multiplayer users (which compounded to ~6x in the final data), a ~15% A/B test lift, and worse retention for paid acquisition. This means the "findings" are not accidents — the project demonstrates methodology, not data luck.
+
+---
+
+## Running it yourself
+```bash
+# 1. Install dependencies
+pip install posthog python-dotenv
+
+# 2. Create .env file with your PostHog credentials
+# POSTHOG_API_KEY=phc_...
+# POSTHOG_HOST=https://eu.i.posthog.com
+
+# 3. Test the pipe with 10 users first
+python send_events.py 10
+
+# 4. Run the full simulation
+python send_events.py 1000
+```
+
+---
+
+## About me
+
+I'm Nidhi Gayatri Triplicane, a Data/Business Analyst based in Berlin. I previously worked at ZS Associates as a Decision Analytics Associate, specializing in commercial analytics and customer insights for large enterprise clients.
+
+**Connect:** [LinkedIn](https://linkedin.com/in/gayatri-triplicane) · [GitHub](https://github.com/nidhi0908) · [Tableau Public](https://public.tableau.com/app/profile/gayatri.triplicane/vizzes)
