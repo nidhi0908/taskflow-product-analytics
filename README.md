@@ -15,9 +15,9 @@ Four PM questions, four insights, four recommendations. The one-sentence story: 
 | # | Question | Insight | Recommendation |
 |---|---|---|---|
 | 1 | Where are we losing users before activation? | **40% of users drop off at onboarding.** Everything after onboarding converts at >95%. | Shorten or simplify onboarding. The product works — users just aren't reaching it. |
-| 2 | Does inviting a teammate predict retention? | **Multiplayer users retain at 48% on Day 7 vs 7% for solo users — a ~6.6x lift.** | Move the team invite prompt to step 1 of onboarding. It's the single strongest retention lever in the data. |
-| 3 | Does simplified onboarding lift activation? | **Treatment group activated at 69.5% vs control at 55.8% — a +13.6 percentage point lift (+24% relative).** | Ship treatment to 100% of new users. Combined with #2, expect Day 7 retention to rise ~5-7 pp. |
-| 4 | Are paid-acquisition users worth it? | **Paid search users underperform on every metric — 12 pp lower activation, 12 pp lower return, zero paid conversions.** Referral traffic is the best channel by far. | Audit paid search targeting. Redirect budget into a formal referral program — referral is already outperforming every other channel organically. |
+| 2 | Does inviting a teammate predict retention? | **Multiplayer users retain at 48% on Day 7 vs 7% for solo users - a ~6.6x lift.** | Move the team invite prompt to step 1 of onboarding. It's the single strongest retention lever in the data. |
+| 3 | Does simplified onboarding lift activation? | **Treatment group activated at 69.5% vs control at 55.8% - a +13.6 percentage point lift (+24% relative).** | Ship treatment to 100% of new users. Combined with #2, expect Day 7 retention to rise ~5-7 pp. |
+| 4 | Are paid-acquisition users worth it? | **Paid search users underperform on every metric- 12 pp lower activation, 12 pp lower return, zero paid conversions.** Referral traffic is the best channel by far. | Audit paid search targeting. Redirect budget into a formal referral program — referral is already outperforming every other channel organically. |
 
 ---
 
